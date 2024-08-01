@@ -1,0 +1,48 @@
+pipeline {
+	agent any
+	parameters {
+      string defaultValue: '', description: 'select a browser', name: 'browser', trim: false
+    }
+
+tools
+{
+	maven 'maven_home'
+}
+stages
+{
+	stage('checkout')
+	{
+		steps{
+		    echo "checkingout"
+		    echo "${params.browser}"
+            git credentialsId: '140b9004-3666-4252-a40e-f876c2bad208', url: 'https://github.com/qavbox/SampleProjSel.git'
+		}
+	}
+	stage('Test')
+	{
+		steps
+		{
+		    catchError {
+                echo "Test"
+                sh "mvn test -Dbrowser=${params.browser} -Dmaven.test.failure.ignore=true"
+            }
+            echo currentBuild.result
+		}
+	}
+	stage('Deploy')
+	{
+		steps
+		{
+		    echo "Deploy"
+		}
+ 	}
+}
+post{
+    always{
+        echo "artifact"
+        archiveArtifacts artifacts: 'ExtentTestReport/*.html'
+        archiveArtifacts artifacts: 'target/surefire-reports/emailable-report.html'
+        junit testResults: 'target/surefire-reports/*.xml', skipPublishingChecks: true
+    }
+}
+}
